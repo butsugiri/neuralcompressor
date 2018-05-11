@@ -4,6 +4,13 @@ This is the chainer port of `nncompress` (forked from Tensorflow impl. by the au
 
 The most of my implementation corresponds to the original implementation.
 
+## Requirements
+
+- Python 3.5 or higher
+- Chainer 4.0.0
+- CuPy 4.0.0
+- logzero
+
 ## Usage
 
 1. Download the project and prepare the data
