@@ -18,9 +18,9 @@ def main():
     parser.add_argument('--gpu', '-g', type=int, default=-1, help='GPU ID (Negative Value Indicates CPU)')
 
     # Arguments for the dataset / vocabulary path
-    parser.add_argument('--model', dest='model', required=True, type=str, help='')
-    parser.add_argument('--vocab-path', dest='vocab_file', required=True, type=str, help='')
-    parser.add_argument('--matrix', required=True, type=str, help='Original Word Vector')
+    parser.add_argument('--model', dest='model', required=True, type=os.path.abspath, help='')
+    parser.add_argument('--vocab-path', dest='vocab_file', required=True, type=os.path.abspath, help='')
+    parser.add_argument('--matrix', required=True, type=os.path.abspath, help='Original Word Vector')
     args = parser.parse_args()
 
     resource = Resource(args, train=False)
