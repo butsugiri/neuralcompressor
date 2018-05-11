@@ -1,3 +1,73 @@
+# chainer-nncompress: Chainer Implementations of Embedding Quantization 
+
+This is the chainer port of `nncompress` (forked from Tensorflow impl. by the author of the paper).
+
+The most of my implementation corresponds to the original implementation.
+
+## Usage
+
+1. Download the project and prepare the data
+
+```
+> git clone https://github.com/zomux/neuralcompressor
+> cd neuralcompressor
+> bash scripts/download_glove_data.sh
+```
+
+2. Convert the Glove embeddings to numpy format
+
+```
+> python scripts/convert_glove2numpy.py data/glove.6B.300d.txt
+```
+
+3. Train the embedding quantization model
+
+```
+> python train_comp.py -b 64 -e 200 -g 0 -O Adam --M 32 --K 16 --tau 0.1 --input-matrix ./data/glove.6B.300d.npy
+```
+
+```
+...
+199         1.245e+06   11.519      11.8183               0.980877    0.982509
+199         1.246e+06   11.7329     11.795                0.982026    0.982303
+199         1.247e+06   11.6411     11.8103               0.983015    0.982784
+199         1.248e+06   11.2741     11.8116               0.981655    0.982299
+199         1.249e+06   11.9637     11.8323               0.982289    0.982389
+200         1.25e+06    11.3458     11.8293               0.982983    0.982753
+200         1.25e+06    11.3458     11.8293               0.982983    0.982753
+[I 180511 00:46:57 train_comp:123] Training complete!!
+[I 180511 00:46:57 resource:122] EXIT TIME: 20180511 - 00:46:57
+[I 180511 00:46:57 resource:124] Duration: 2:03:28.673434
+[I 180511 00:46:57 resource:125] Remember: log is saved in /home/kiyono/deploy/nncompress/result/20180510_224328_model_seed_0_optim_Adam_tau_0.1_batch_64_M_32_K_16
+```
+
+4. Export the word codes and the codebook matrix
+
+```
+> python python infer_comp.py --gpu 0 --model result/20180510_224328_model_seed_0_optim_Adam_tau_0.1_batch_64_M_32_K_16/iter_1211000.npz --vocab-path data/glove.6B.300d.word --matrix data/glove.6B.300d.npy
+```
+
+It will generate two files in result dir:
+- iter_1211000.npz.codebook.npy
+- iter_1211000.npz.codes
+
+6. Check the codes
+
+```
+> head -100 iter_1211000.npz.codes
+```
+
+```
+...
+pao     9 11 10 12 7 9 5 2 0 14 2 12 6 3 2 12 0 7 2 4 9 5 3 10 15 1 5 15 2 10 15 4
+comforts        12 8 6 8 15 5 1 4 10 4 15 3 1 15 14 5 6 12 2 12 1 12 12 6 4 14 7 0 9 11 13 3
+nellie  2 15 1 13 14 0 5 3 7 13 0 8 1 0 14 4 3 6 2 3 1 4 8 7 15 1 7 15 4 11 9 4
+trondheim       6 7 8 6 6 3 8 7 6 3 11 13 11 3 9 14 9 10 4 8 15 9 13 12 3 7 6 12 15 1 4 13
+...
+```
+
+---
+# Following is the README of Original Repo
 # nncompress: Implementations of Embedding Quantization (Compress Word Embeddings)
 
 Thank you for your interest on our paper.
