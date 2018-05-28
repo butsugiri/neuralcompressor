@@ -14,19 +14,14 @@ from compressor.resource import Resource
 from compressor.subfuncs import set_random_seed, save_non_embed_npz
 
 
-# TODO: gradient clipping??
-
-
 def main():
     parser = argparse.ArgumentParser(description='Embedding Compressor',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--batchsize', '-b', type=int, default=64,
+    parser.add_argument('--batchsize', '-b', type=int, default=128,
                         help='Number of sentences in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=13,
-                        help='Number of sweeps over the dataset to train')
-    # parser.add_argument('--iter', '-i', dest='iteration', type=int, default=200000,
-    #                     help='Number of iterations')
+    parser.add_argument('--iter', '-i', dest='iteration', type=int, default=200000,
+                        help='Number of iterations')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--resume', '-r', default='',
@@ -39,10 +34,8 @@ def main():
                         help='Number of Codebooks')
     parser.add_argument('--K' '-K', dest='n_centroids', type=int, default=16,
                         help='Number of Centroids (Number of vectors in each codebook)')
-    parser.add_argument('--tau', dest='tau', type=float, default=0.1,
+    parser.add_argument('--tau', dest='tau', type=float, default=1.0,
                         help='Tau value in Gumbel-softmax')
-    parser.add_argument('--max-grad-norm', dest='max_grad_norm', type=float, default=0.001,
-                        help='Maximum Gradient Norm')
 
     # Arguments for the dataset / vocabulary path
     parser.add_argument('--input-matrix', dest='input_matrix', required=True,
@@ -62,7 +55,7 @@ def main():
     resource.dump_git_info()
     resource.dump_command_info()
     resource.dump_python_info()
-    resource.dump_library_info()
+    resource.dump_chainer_info()
     resource.save_config_file()
 
     logger = resource.logger
@@ -74,8 +67,8 @@ def main():
     model = EmbeddingCompressor(
         n_vocab=dataset.embed_matrix.shape[0],
         embed_dim=dataset.embed_matrix.shape[1],
-        n_codebooks=args.n_codebooks,  # default: 32
-        n_centroids=args.n_centroids,  # default: 16
+        n_codebooks=args.n_codebooks,
+        n_centroids=args.n_centroids,
         tau=args.tau,
         embed_mat=dataset.embed_matrix
     )
@@ -91,16 +84,15 @@ def main():
 
     # Send model to GPU (according to the arguments)
     if args.gpu >= 0:
+        chainer.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu(args.gpu)
 
     train_iter = SerialIterator(dataset=train_data, batch_size=args.batchsize, shuffle=True)
 
     updater = training.updater.StandardUpdater(train_iter, optimizer, device=args.gpu)
-    # trainer = training.Trainer(updater, (args.iteration, 'iteration'), out=resource.output_dir)
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=resource.output_dir)
+    trainer = training.Trainer(updater, (args.iteration, 'iteration'), out=resource.output_dir)
 
     short_term = (1000, 'iteration')
-    long_term = (1, 'epoch')
 
     dev_iter = SerialIterator(valid_data, args.batchsize, repeat=False)
     trainer.extend(
@@ -108,14 +100,14 @@ def main():
     trainer.extend(extensions.ProgressBar(update_interval=1))
     trainer.extend(extensions.LogReport(trigger=short_term, log_name='chainer_report_iteration.log'),
                    trigger=short_term, name='iteration')
-    trainer.extend(extensions.LogReport(trigger=long_term, log_name='chainer_report_epoch.log'), trigger=long_term,
+    trainer.extend(extensions.LogReport(trigger=short_term, log_name='chainer_report_epoch.log'), trigger=short_term,
                    name='epoch')
     trainer.extend(extensions.snapshot_object(model, 'iter_{.updater.iteration}.npz', savefun=save_non_embed_npz),
                    trigger=MinValueTrigger('validation/main/loss', short_term))
 
     entries = ['epoch', 'iteration', 'main/loss', 'validation/main/loss', 'main/maxp', 'validation/main/maxp']
     trainer.extend(extensions.PrintReport(entries=entries, log_report='iteration'), trigger=short_term)
-    trainer.extend(extensions.PrintReport(entries=entries, log_report='epoch'), trigger=long_term)
+    trainer.extend(extensions.PrintReport(entries=entries, log_report='epoch'), trigger=short_term)
 
     logger.info('Start training...')
     trainer.run()

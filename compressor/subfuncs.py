@@ -15,19 +15,16 @@ def set_random_seed(seed, gpu):
     np.random.seed(seed)
     # set CuPy random seed
     if gpu >= 0:
-        chainer.cuda.get_device_from_id(gpu).use()
-        chainer.cuda.cupy.random.seed(seed)
-
-
-# strict=False オプションを使うためだけの関数
-# Chainer v2.0.1時点ではまだマージされていない
-def load_npz(filename, obj, strict=False):
-    with np.load(filename) as f:
-        d = chainer.serializers.NpzDeserializer(f, strict=strict)
-        d.load(obj)
+        chainer.backends.cuda.get_device_from_id(gpu).use()
+        chainer.backends.cuda.cupy.random.seed(seed)
 
 
 def save_non_embed_npz(file, obj, compression=True):
+    """
+    Since we do not update the original embedding matrix,
+    it is unnecessary (and waste of storage) to include it in model file.
+    --> Exclude embed_mat from .npz file
+    """
     if isinstance(file, six.string_types):
         with open(file, 'wb') as f:
             save_non_embed_npz(f, obj, compression)

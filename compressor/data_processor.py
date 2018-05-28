@@ -11,8 +11,6 @@ DATA_TYPE = ('train', 'dev', 'test')
 
 class DataProcessor(object):
     def __init__(self, log_name):
-        # dictionary for vocabulary
-        # each variable is set by calling load_vocab_from_path
         self.embed_matrix = None
 
         self.logger = logger
@@ -28,8 +26,6 @@ class DataProcessor(object):
 
     def load_data(self, data_type):
         assert data_type in DATA_TYPE
-        # Vocabulary must be loaded in advance
-        # (Otherwise the data cannot be converted to indices)
         assert self.embed_matrix is not None
 
         n_vocab, embed_dim = self.embed_matrix.shape
@@ -38,7 +34,7 @@ class DataProcessor(object):
         elif data_type == 'dev':
             dataset = list(range(n_vocab))
             np.random.shuffle(dataset)
-            dataset = dataset[:2000]
+            dataset = dataset[:2000]  # dev size: 2000
         self.logger.info('{} data is successfully loaded'.format(data_type))
         self.logger.info('{} data contains {} instances'.format(data_type, len(dataset)))
         return dataset

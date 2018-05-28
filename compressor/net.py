@@ -7,8 +7,6 @@ import numpy as np
 from chainer import Chain
 from chainer import reporter
 
-from compressor.functions import gumbel_softmax
-
 
 class EmbeddingCompressor(Chain):
     def __init__(self, n_codebooks, n_centroids, n_vocab, embed_dim, tau, embed_mat):
@@ -36,7 +34,7 @@ class EmbeddingCompressor(Chain):
         exs = self.embed_mat(xs)
         h = F.tanh(self.l1(exs))
         logits = F.softplus(self.l2(h))
-        logits = F.log(logits + 1e-8).reshape(-1, self.M, self.K)
+        logits = F.log(logits + 1e-10).reshape(-1, self.M, self.K)
         return logits, exs
 
     def _decode(self, gumbel_output):
@@ -54,7 +52,7 @@ class EmbeddingCompressor(Chain):
         logits, exs = self._encode(xs)
 
         # Discretization
-        D = gumbel_softmax(logits, self.tau, axis=2)  # axisに注意
+        D = F.gumbel_softmax(logits, self.tau, axis=2)
         gumbel_output = D.reshape(-1, self.M * self.K)
         with chainer.no_backprop_mode():
             maxp = F.mean(F.max(D, axis=2))

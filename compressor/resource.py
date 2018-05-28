@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import glob
 import json
 import os
 import shutil
@@ -16,6 +15,7 @@ class Resource(object):
     """
     Helper class for the experiment.
     """
+
     def __init__(self, args, train=True):
         self.args = args  # argparse object
         self.logger = logger
@@ -82,20 +82,11 @@ class Resource(object):
         self.logger.info('Command is executed at: [{}]'.format(os.getcwd()))
         self.logger.info('Program is running at: [{}]'.format(os.uname().nodename))
 
-    def dump_library_info(self):
+    def dump_chainer_info(self):
         """
-        returns chainer, cupy and cudnn version info
+        returns chainer, CuPy and CuDNN version info
         """
-        self.logger.info('Chainer Version: [{}]'.format(chainer.__version__))
-        try:
-            self.logger.info('CuPy Version: [{}]'.format(chainer.cuda.cupy.__version__))
-        except AttributeError:
-            self.logger.warn('CuPy was not found in your environment')
-
-        if chainer.cuda.cudnn_enabled:
-            self.logger.info('CuDNN is available')
-        else:
-            self.logger.warn('CuDNN is not available')
+        chainer.print_runtime_info()
 
     def dump_python_info(self):
         """
@@ -131,12 +122,3 @@ class Resource(object):
         config_path = os.path.join(self.output_dir, 'config.json')
         self.config = json.load(open(config_path, 'r'))
         self.logger.info('Loaded config from {}'.format(config_path))
-
-    def get_vocab_path(self):
-        query = os.path.join(self.args.out, '*.dict')
-        return glob.glob(query)[0]
-
-    def get_model_path(self):
-        query = os.path.join(self.args.out, 'model_epoch_{}'.format(self.args.epoch))
-        return glob.glob(query)[0]
-
